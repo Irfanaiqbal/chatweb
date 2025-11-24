@@ -243,31 +243,37 @@ io.on('connection', (socket) => {
     sendAdminUpdate();
   });
 
-  // Admin authentication
-  socket.on('adminAuth', (password) => {
+// Admin authentication
+socket.on('adminAuth', (password) => {
     console.log(`🔐 Admin auth attempt from: ${socket.id}`);
+    console.log(`🔐 Password received: ${password}`);
+    console.log(`🔐 Expected password: ${ADMIN_PASSWORD}`);
+    
     if (password === ADMIN_PASSWORD) {
-      adminConnections.add(socket.id);
-      socket.emit('adminAuthSuccess');
-      console.log(`✅ Admin authenticated: ${socket.id}. Total admins: ${adminConnections.size}`);
-      
-      // Send immediate data to this admin
-      const adminData = {
-        onlineUsers: Array.from(onlineUsers.values()),
-        waitingUser: waitingUser,
-        activeRooms: Array.from(activeRooms.values()),
-        stats: {
-          totalOnline: onlineUsers.size,
-          totalRooms: activeRooms.size,
-          waitingUsers: waitingUser ? 1 : 0,
-          totalMessages: messageCount
-        }
-      };
-      
-      socket.emit('adminData', adminData);
-      console.log(`📨 Sent initial data to admin ${socket.id}`);
+        adminConnections.add(socket.id);
+        socket.emit('adminAuthSuccess');
+        console.log(`✅ Admin authenticated: ${socket.id}. Total admins: ${adminConnections.size}`);
+        
+        // Send immediate data to this admin
+        const adminData = {
+            onlineUsers: Array.from(onlineUsers.values()),
+            waitingUser: waitingUser,
+            activeRooms: Array.from(activeRooms.values()),
+            stats: {
+                totalOnline: onlineUsers.size,
+                totalRooms: activeRooms.size,
+                waitingUsers: waitingUser ? 1 : 0,
+                totalMessages: messageCount
+            }
+        };
+        
+        socket.emit('adminData', adminData);
+        console.log(`📨 Sent initial data to admin ${socket.id}`);
+    } else {
+        console.log(`❌ Admin authentication FAILED for: ${socket.id}`);
+        console.log(`❌ Received: ${password}, Expected: ${ADMIN_PASSWORD}`);
     }
-  });
+});
 
   // Handle manual refresh request
   socket.on('adminRefresh', () => {
