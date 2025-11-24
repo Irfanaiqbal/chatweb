@@ -493,12 +493,30 @@
             document.getElementById('last-updated-rooms').textContent = new Date().toLocaleTimeString();
         }
 
-        // Auto-refresh data every 3 seconds
-        setInterval(() => {
-            if (isAuthenticated) {
-                socket.emit('adminAuth', 'admin123');
-            }
-        }, 3000);
+        // Add this to the existing script in admin.html
+
+// Request manual refresh
+function refreshAdminData() {
+    socket.emit('adminRefresh');
+}
+
+// Add refresh button to admin panel
+document.addEventListener('DOMContentLoaded', function() {
+    const headerActions = document.querySelector('.header-actions');
+    const refreshBtn = document.createElement('a');
+    refreshBtn.className = 'btn btn-primary';
+    refreshBtn.href = '#';
+    refreshBtn.onclick = function(e) { e.preventDefault(); refreshAdminData(); };
+    refreshBtn.innerHTML = '🔄 Refresh';
+    headerActions.insertBefore(refreshBtn, headerActions.firstChild);
+});
+
+// Auto-refresh data every 3 seconds
+setInterval(() => {
+    if (isAuthenticated) {
+        socket.emit('adminAuth', 'admin123');
+    }
+}, 3000);
 
         // Initial display
         updateLastUpdated();
