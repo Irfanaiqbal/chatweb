@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login — ChatApp</title>
+    <style>
+        /* ===== RESET ===== */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #0d0d17; 
+            color: #e2e8f0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ===== LOGIN CONTAINER ===== */
+        .login-container { 
+            background: #161623; 
+            padding: 3rem 2.5rem; 
+            border-radius: 20px; 
+            width: 100%; 
+            max-width: 420px; 
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ===== LOGO ===== */
+        .logo { 
+            text-align: center; 
+            margin-bottom: 2rem; 
+        }
+
+        .logo h1 { 
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #6a5af9, #8a70ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem; 
+        }
+
+        .logo p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        /* ===== FORM STYLES ===== */
+        .form-group { 
+            margin-bottom: 1.5rem; 
+        }
+
+        .form-group label { 
+            display: block; 
+            margin-bottom: 0.75rem; 
+            color: #cbd5e1;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-group input { 
+            width: 100%; 
+            padding: 15px 18px; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 12px; 
+            background: #0f0f1b; 
+            color: #e2e8f0; 
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #6a5af9;
+            box-shadow: 0 0 0 3px rgba(106, 90, 249, 0.2);
+        }
+
+        .form-group input::placeholder {
+            color: #64748b;
+        }
+
+        /* ===== BUTTON ===== */
+        .btn-login { 
+            width: 100%; 
+            padding: 16px; 
+            border: none; 
+            border-radius: 12px; 
+            background: linear-gradient(135deg, #6a5af9, #8a70ff);
+            color: white; 
+            cursor: pointer; 
+            margin-bottom: 1.5rem; 
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(110, 90, 255, 0.3);
+        }
+
+        .btn-login:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(110, 90, 255, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        /* ===== ERROR MESSAGE ===== */
+        .error { 
+            background: rgba(239, 68, 68, 0.15); 
+            color: #ef4444; 
+            padding: 14px; 
+            border-radius: 10px; 
+            text-align: center; 
+            margin-bottom: 1.5rem; 
+            display: none;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-weight: 500;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 2.5rem 2rem;
+                margin: 0 20px;
+            }
+            
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+            
+            .form-group input {
+                padding: 14px 16px;
+            }
+            
+            .btn-login {
+                padding: 15px;
+            }
+        }
+
+        /* ===== BACKGROUND DECORATION ===== */
+        .bg-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at top, #1a1a2e, #0d0d17);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration"></div>
+    
+    <div class="login-container">
+        <div class="logo">
+            <h1>ChatApp</h1>
+            <p>Admin Panel Login</p>
+        </div>
+
+        <div id="error-message" class="error">
+            Invalid username or password
+        </div>
+
+        <form action="/admin/login" method="POST">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn-login">Login to Admin Panel</button>
+        </form>
+    </div>
+
+    <script>
+        // Show error if URL has error parameter
+        if (window.location.search.includes('error=1')) {
+            document.getElementById('error-message').style.display = 'block';
+        }
+        
+        // Auto-focus on username
+        document.getElementById('username').focus();
+        
+        // Add smooth animation on load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.login-container').style.opacity = '0';
+            document.querySelector('.login-container').style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                document.querySelector('.login-container').style.transition = 'all 0.5s ease';
+                document.querySelector('.login-container').style.opacity = '1';
+                document.querySelector('.login-container').style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
