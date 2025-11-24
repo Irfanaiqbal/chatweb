@@ -359,168 +359,183 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let messageCount = 0;
-        let isAuthenticated = false;
+   <script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let isAuthenticated = false;
 
-        // Authenticate with admin
-        socket.emit('adminAuth', 'admin123');
+    console.log('🔄 Admin panel loaded, attempting authentication...');
 
-        // Socket event handlers
-        socket.on('adminAuthSuccess', () => {
-            isAuthenticated = true;
-            console.log('Admin authentication successful');
-        });
+    // Authenticate with admin
+    socket.emit('adminAuth', 'admin123');
 
-        socket.on('adminData', (data) => {
-            updateStats(data.stats);
-            updateOnlineUsers(data.onlineUsers);
-            updateActiveRooms(data.activeRooms);
-            updateLastUpdated();
-        });
+    // Socket event handlers
+    socket.on('connect', () => {
+        console.log('✅ Connected to server with ID:', socket.id);
+    });
 
-        // Update functions
-        function updateStats(stats) {
-            document.getElementById('stat-online').textContent = stats.totalOnline;
-            document.getElementById('stat-rooms').textContent = stats.totalRooms;
-            document.getElementById('stat-waiting').textContent = stats.waitingUsers;
-            document.getElementById('stat-messages').textContent = stats.totalMessages;
-        }
+    socket.on('adminAuthSuccess', () => {
+        isAuthenticated = true;
+        console.log('✅ Admin authentication successful');
+        document.body.style.border = '5px solid green';
+    });
 
-        function updateOnlineUsers(users) {
-            const container = document.getElementById('users-container');
-            
-            if (users.length === 0) {
-                container.innerHTML = '<div class="no-data">No users online</div>';
-                return;
-            }
-
-            container.innerHTML = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Socket ID</th>
-                            <th>IP Address</th>
-                            <th>Connected At</th>
-                            <th>Status</th>
-                            <th>Room</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${users.map(user => `
-                            <tr>
-                                <td><code>${user.id}</code></td>
-                                <td><span class="ip-address">${user.ip}</span></td>
-                                <td>${formatDateTime(user.connectedAt)}</td>
-                                <td>
-                                    <span class="status-${user.status}">
-                                        ${getStatusIcon(user.status)} ${user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                                    </span>
-                                </td>
-                                <td>${user.room ? `<code>${user.room}</code>` : '—'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-        }
-
-        function updateActiveRooms(rooms) {
-            const container = document.getElementById('rooms-container');
-            
-            if (rooms.length === 0) {
-                container.innerHTML = '<div class="no-data">No active rooms</div>';
-                return;
-            }
-
-            container.innerHTML = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Room ID</th>
-                            <th>Users</th>
-                            <th>Created At</th>
-                            <th>Duration</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rooms.map(room => `
-                            <tr>
-                                <td><code>${room.id}</code></td>
-                                <td>${room.users.map(userId => `<code>${userId}</code>`).join(', ')}</td>
-                                <td>${formatDateTime(room.createdAt)}</td>
-                                <td>${getDuration(room.createdAt)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            
-            updateRoomsLastUpdated();
-        }
-
-        function getStatusIcon(status) {
-            const icons = {
-                'waiting': '⏳',
-                'chatting': '💬',
-                'connected': '🔌'
-            };
-            return icons[status] || '❓';
-        }
-
-        function formatDateTime(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleString();
-        }
-
-        function getDuration(createdAt) {
-            const now = new Date();
-            const created = new Date(createdAt);
-            const diff = Math.floor((now - created) / 1000);
-            
-            if (diff < 60) return `${diff}s`;
-            if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s`;
-            return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
-        }
-
-        function updateLastUpdated() {
-            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
-        }
-
-        function updateRoomsLastUpdated() {
-            document.getElementById('last-updated-rooms').textContent = new Date().toLocaleTimeString();
-        }
-
-        // Add this to the existing script in admin.html
-
-// Request manual refresh
-function refreshAdminData() {
-    socket.emit('adminRefresh');
-}
-
-// Add refresh button to admin panel
-document.addEventListener('DOMContentLoaded', function() {
-    const headerActions = document.querySelector('.header-actions');
-    const refreshBtn = document.createElement('a');
-    refreshBtn.className = 'btn btn-primary';
-    refreshBtn.href = '#';
-    refreshBtn.onclick = function(e) { e.preventDefault(); refreshAdminData(); };
-    refreshBtn.innerHTML = '🔄 Refresh';
-    headerActions.insertBefore(refreshBtn, headerActions.firstChild);
-});
-
-// Auto-refresh data every 3 seconds
-setInterval(() => {
-    if (isAuthenticated) {
-        socket.emit('adminAuth', 'admin123');
-    }
-}, 3000);
-
-        // Initial display
+    socket.on('adminData', (data) => {
+        console.log('📊 Received admin data:', data);
+        updateStats(data.stats);
+        updateOnlineUsers(data.onlineUsers);
+        updateActiveRooms(data.activeRooms);
         updateLastUpdated();
-        updateRoomsLastUpdated();
-    </script>
+    });
+
+    socket.on('onlineCountUpdate', (count) => {
+        console.log('👥 Online count update:', count);
+        document.getElementById('stat-online').textContent = count;
+    });
+
+    socket.on('disconnect', () => {
+        console.log('❌ Disconnected from server');
+        document.body.style.border = '5px solid red';
+    });
+
+    socket.on('error', (error) => {
+        console.error('💥 Socket error:', error);
+    });
+
+    // Update functions
+    function updateStats(stats) {
+        console.log('Updating stats:', stats);
+        document.getElementById('stat-online').textContent = stats.totalOnline;
+        document.getElementById('stat-rooms').textContent = stats.totalRooms;
+        document.getElementById('stat-waiting').textContent = stats.waitingUsers;
+        document.getElementById('stat-messages').textContent = stats.totalMessages;
+    }
+
+    function updateOnlineUsers(users) {
+        console.log('Updating online users:', users);
+        const container = document.getElementById('users-container');
+        
+        if (users.length === 0) {
+            container.innerHTML = '<div class="no-data">No users online</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Socket ID</th>
+                        <th>IP Address</th>
+                        <th>Connected At</th>
+                        <th>Status</th>
+                        <th>Room</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${users.map(user => `
+                        <tr>
+                            <td><code>${user.id}</code></td>
+                            <td><span class="ip-address">${user.ip}</span></td>
+                            <td>${new Date(user.connectedAt).toLocaleString()}</td>
+                            <td>
+                                <span class="status-${user.status}">
+                                    ${getStatusIcon(user.status)} ${user.status}
+                                </span>
+                            </td>
+                            <td>${user.room ? `<code>${user.room}</code>` : '—'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function updateActiveRooms(rooms) {
+        console.log('Updating active rooms:', rooms);
+        const container = document.getElementById('rooms-container');
+        
+        if (rooms.length === 0) {
+            container.innerHTML = '<div class="no-data">No active rooms</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Room ID</th>
+                        <th>Users</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rooms.map(room => `
+                        <tr>
+                            <td><code>${room.id}</code></td>
+                            <td>${room.users.map(userId => `<code>${userId}</code>`).join(', ')}</td>
+                            <td>${new Date(room.createdAt).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function getStatusIcon(status) {
+        const icons = {
+            'waiting': '⏳',
+            'chatting': '💬'
+        };
+        return icons[status] || '❓';
+    }
+
+    function updateLastUpdated() {
+        document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+    }
+
+    function refreshAdminData() {
+        console.log('🔄 Manual refresh requested');
+        if (isAuthenticated) {
+            socket.emit('adminRefresh');
+        } else {
+            socket.emit('adminAuth', 'admin123');
+        }
+    }
+
+    // Add refresh button
+    document.addEventListener('DOMContentLoaded', function() {
+        const headerActions = document.querySelector('.header-actions');
+        const refreshBtn = document.createElement('a');
+        refreshBtn.className = 'btn btn-primary';
+        refreshBtn.href = '#';
+        refreshBtn.onclick = function(e) { 
+            e.preventDefault(); 
+            refreshAdminData(); 
+        };
+        refreshBtn.innerHTML = '🔄 Refresh';
+        refreshBtn.style.marginRight = '10px';
+        headerActions.insertBefore(refreshBtn, headerActions.firstChild);
+        
+        // Add debug info
+        const debugInfo = document.createElement('div');
+        debugInfo.innerHTML = `<small>Socket: <span id="socket-status">Connecting...</span></small>`;
+        debugInfo.style.marginTop = '10px';
+        debugInfo.style.color = '#8892b0';
+        headerActions.appendChild(debugInfo);
+    });
+
+    // Update socket status
+    socket.on('connect', () => {
+        document.getElementById('socket-status').textContent = 'Connected';
+        document.getElementById('socket-status').style.color = 'green';
+    });
+    
+    socket.on('disconnect', () => {
+        document.getElementById('socket-status').textContent = 'Disconnected';
+        document.getElementById('socket-status').style.color = 'red';
+    });
+
+    console.log('🔧 Admin panel initialization complete');
+</script>
 </body>
 </html>
