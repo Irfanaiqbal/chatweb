@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatApp — Premium Dark UI</title>
+
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0d0d17;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(16px);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .navbar .logo {
+            font-size: 1.9rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #6a5af9, #8a70ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .navbar .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .navbar .nav-links a {
+            font-size: 1rem;
+            color: #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 12px;
+            transition: 0.25s;
+        }
+
+        .navbar .nav-links a:hover {
+            background: rgba(138, 112, 255, 0.12);
+            color: #a992ff;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 110px 20px 60px;
+            background: radial-gradient(circle at top, #1a1a2e, #0d0d17);
+        }
+
+        .hero-section h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ffffff, #b3b3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .hero-section p {
+            font-size: 1.25rem;
+            max-width: 650px;
+            color: #a3adc2;
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #6a5af9, #8a70ff);
+            padding: 16px 42px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 50px;
+            box-shadow: 0 10px 40px rgba(110, 90, 255, 0.4);
+            transition: 0.3s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 55px rgba(110, 90, 255, 0.6);
+        }
+
+        /* ===== FEATURES SECTION ===== */
+        .features-section {
+            padding: 90px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 35px;
+            background: #0f0f1b;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .feature-card {
+            background: #161623;
+            padding: 40px 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: #6a5af9;
+            box-shadow: 0 16px 50px rgba(110, 90, 255, 0.18);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 18px;
+            color: #8a70ff;
+        }
+
+        .feature-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+
+        /* ===== CHAT SECTION ===== */
+        .chat-section {
+            padding: 90px 40px;
+            text-align: center;
+            background: #0d0d17;
+        }
+
+        .chat-section h2 {
+            font-size: 3rem;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .chat-section p {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 30px 20px;
+            text-align: center;
+            color: #6b7280;
+            background: #0b0b14;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== MOBILE NAVIGATION ===== */
+        .hamburger {
+            display: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #cbd5e1;
+            transition: 0.3s;
+        }
+
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+
+            .navbar .nav-links {
+                position: absolute;
+                top: 70px;
+                right: 20px;
+                background: rgba(22, 22, 35, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 15px;
+                padding: 20px;
+                display: none;
+                flex-direction: column;
+                gap: 20px;
+                box-shadow: 0 10px 35px rgba(0,0,0,0.4);
+                backdrop-filter: blur(10px);
+            }
+
+            .navbar .nav-links.open {
+                display: flex;
+                animation: dropdown 0.3s ease;
+            }
+
+            @keyframes dropdown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2.7rem;
+            }
+
+            .chat-section h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">ChatApp</div>
+        <div class="hamburger" onclick="toggleMenu()">
+            ☰
+        </div>
+        <div class="nav-links" id="mobileMenu">
+            <a href="#home">Home</a>
+            <a href="#features">Features</a>
+            <a href="mailto:support@chatapp.com">Contact</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section id="home" class="hero-section">
+        <h1>Connect with Strangers Worldwide</h1>
+        <p>Anonymous, real‑time conversations with people across the globe. Safe, fast, and secure.</p>
+        <a href="/chat" class="cta-button">Start Chatting</a>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="features-section">
+        <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Anonymous & Secure</h3>
+            <p>Your identity stays protected. No personal data required — ever.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Real-Time Chatting</h3>
+            <p>Instant message delivery with smooth and responsive UI.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🌍</div>
+            <h3>Global Users</h3>
+            <p>Meet people from different countries and cultures anytime.</p>
+        </div>
+    </section>
+
+    <!-- CHAT CTA -->
+    <section class="chat-section">
+        <h2>Ready to Start Chatting?</h2>
+        <p>Thousands of users are online right now. Join them!</p>
+        <a href="/chat" class="cta-button">Get Started</a>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        © 2024 ChatApp — All Rights Reserved.
+    </footer>
+
+<script>
+        function toggleMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
