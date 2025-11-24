@@ -359,25 +359,42 @@
         </div>
     </div>
 
-   <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
     let isAuthenticated = false;
 
     console.log('🔄 Admin panel loaded, attempting authentication...');
 
-    // Authenticate with admin
-    socket.emit('adminAuth', 'admin123');
+    // Try to authenticate immediately
+    authenticateAdmin();
+
+    function authenticateAdmin() {
+        console.log('🔐 Attempting admin authentication...');
+        socket.emit('adminAuth', 'admin123');
+        
+        // If not authenticated in 3 seconds, try again
+        setTimeout(() => {
+            if (!isAuthenticated) {
+                console.log('🕒 Authentication timeout, retrying...');
+                authenticateAdmin();
+            }
+        }, 3000);
+    }
 
     // Socket event handlers
     socket.on('connect', () => {
         console.log('✅ Connected to server with ID:', socket.id);
+        // Re-authenticate on reconnect
+        authenticateAdmin();
     });
 
     socket.on('adminAuthSuccess', () => {
         isAuthenticated = true;
-        console.log('✅ Admin authentication successful');
-        document.body.style.border = '5px solid green';
+        console.log('✅ Admin authentication successful!');
+        document.body.style.border = '5px solid #28a745';
+        // Request immediate data
+        socket.emit('adminRefresh');
     });
 
     socket.on('adminData', (data) => {
@@ -388,18 +405,14 @@
         updateLastUpdated();
     });
 
-    socket.on('onlineCountUpdate', (count) => {
-        console.log('👥 Online count update:', count);
-        document.getElementById('stat-online').textContent = count;
-    });
-
     socket.on('disconnect', () => {
         console.log('❌ Disconnected from server');
-        document.body.style.border = '5px solid red';
+        isAuthenticated = false;
+        document.body.style.border = '5px solid #dc3545';
     });
 
-    socket.on('error', (error) => {
-        console.error('💥 Socket error:', error);
+    socket.on('connect_error', (error) => {
+        console.error('💥 Connection error:', error);
     });
 
     // Update functions
@@ -412,10 +425,10 @@
     }
 
     function updateOnlineUsers(users) {
-        console.log('Updating online users:', users);
+        console.log('Updating online users:', users.length, 'users');
         const container = document.getElementById('users-container');
         
-        if (users.length === 0) {
+        if (!users || users.length === 0) {
             container.innerHTML = '<div class="no-data">No users online</div>';
             return;
         }
@@ -451,10 +464,10 @@
     }
 
     function updateActiveRooms(rooms) {
-        console.log('Updating active rooms:', rooms);
+        console.log('Updating active rooms:', rooms.length, 'rooms');
         const container = document.getElementById('rooms-container');
         
-        if (rooms.length === 0) {
+        if (!rooms || rooms.length === 0) {
             container.innerHTML = '<div class="no-data">No active rooms</div>';
             return;
         }
@@ -498,12 +511,14 @@
         if (isAuthenticated) {
             socket.emit('adminRefresh');
         } else {
-            socket.emit('adminAuth', 'admin123');
+            console.log('Not authenticated, re-authenticating...');
+            authenticateAdmin();
         }
     }
 
-    // Add refresh button
+    // Add UI elements when page loads
     document.addEventListener('DOMContentLoaded', function() {
+        // Add refresh button
         const headerActions = document.querySelector('.header-actions');
         const refreshBtn = document.createElement('a');
         refreshBtn.className = 'btn btn-primary';
@@ -516,24 +531,46 @@
         refreshBtn.style.marginRight = '10px';
         headerActions.insertBefore(refreshBtn, headerActions.firstChild);
         
-        // Add debug info
-        const debugInfo = document.createElement('div');
-        debugInfo.innerHTML = `<small>Socket: <span id="socket-status">Connecting...</span></small>`;
-        debugInfo.style.marginTop = '10px';
-        debugInfo.style.color = '#8892b0';
-        headerActions.appendChild(debugInfo);
+        // Add connection status indicator
+        const statusDiv = document.createElement('div');
+        statusDiv.style.marginTop = '10px';
+        statusDiv.style.padding = '5px 10px';
+        statusDiv.style.borderRadius = '5px';
+        statusDiv.style.background = '#333';
+        statusDiv.innerHTML = `
+            <small>
+                Socket: <span id="socket-status" style="font-weight: bold;">Connecting...</span> | 
+                Auth: <span id="auth-status" style="font-weight: bold;">Pending...</span>
+            </small>
+        `;
+        headerActions.appendChild(statusDiv);
+
+        // Update status indicators
+        socket.on('connect', () => {
+            document.getElementById('socket-status').textContent = 'Connected';
+            document.getElementById('socket-status').style.color = '#28a745';
+        });
+        
+        socket.on('adminAuthSuccess', () => {
+            document.getElementById('auth-status').textContent = 'Authenticated';
+            document.getElementById('auth-status').style.color = '#28a745';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('socket-status').textContent = 'Disconnected';
+            document.getElementById('socket-status').style.color = '#dc3545';
+            document.getElementById('auth-status').textContent = 'Failed';
+            document.getElementById('auth-status').style.color = '#dc3545';
+        });
     });
 
-    // Update socket status
-    socket.on('connect', () => {
-        document.getElementById('socket-status').textContent = 'Connected';
-        document.getElementById('socket-status').style.color = 'green';
-    });
-    
-    socket.on('disconnect', () => {
-        document.getElementById('socket-status').textContent = 'Disconnected';
-        document.getElementById('socket-status').style.color = 'red';
-    });
+    // Auto-refresh every 10 seconds if authenticated
+    setInterval(() => {
+        if (isAuthenticated) {
+            console.log('🔄 Auto-refreshing admin data...');
+            socket.emit('adminRefresh');
+        }
+    }, 10000);
 
     console.log('🔧 Admin panel initialization complete');
 </script>
