@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel — ChatApp</title>
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0d0d17;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* ===== ADMIN CONTAINER ===== */
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ===== ADMIN HEADER ===== */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 25px 30px;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .admin-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #ffffff, #b3b3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6a5af9, #8a70ff);
+            color: white;
+            box-shadow: 0 4px 20px rgba(110, 90, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(110, 90, 255, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #161623;
+            padding: 30px 25px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #6a5af9;
+            box-shadow: 0 16px 40px rgba(110, 90, 255, 0.15);
+        }
+
+        .stat-card h3 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #6a5af9, #8a70ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .stat-card p {
+            color: #94a3b8;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            background: #161623;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section h2 {
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: #e2e8f0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ===== TABLES ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #0f0f1b;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        th, td {
+            padding: 18px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        th {
+            background: rgba(138, 112, 255, 0.1);
+            color: #a992ff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+
+        tr:hover {
+            background: rgba(138, 112, 255, 0.05);
+        }
+
+        /* ===== STATUS INDICATORS ===== */
+        .status-connected {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .status-waiting {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .status-chatting {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .ip-address {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #6a5af9;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px;
+            font-style: italic;
+            background: #0f0f1b;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .last-updated {
+            text-align: right;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 15px;
+        }
+
+        /* ===== REAL-TIME BADGE ===== */
+        .real-time-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .admin-header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+                padding: 20px;
+            }
+
+            .admin-header h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            th, td {
+                padding: 12px 15px;
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.7rem;
+            }
+            
+            .stat-card {
+                padding: 25px 20px;
+            }
+            
+            .stat-card h3 {
+                font-size: 2.5rem;
+            }
+            
+            .section {
+                padding: 15px;
+            }
+            
+            th, td {
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2>📊 Admin Panel <span class="real-time-badge">LIVE</span></h2>
+            <div class="header-actions">
+                <a href="/" class="btn btn-primary">🏠 Home</a>
+                <a href="/admin/logout" class="btn btn-danger">🚪 Logout</a>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="stat-online">0</h3>
+                <p>Online Users</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-rooms">0</h3>
+                <p>Active Rooms</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-waiting">0</h3>
+                <p>Waiting Users</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-messages">0</h3>
+                <p>Total Messages</p>
+            </div>
+        </div>
+
+        <!-- Online Users -->
+        <div class="section">
+            <h2>👥 Online Users <span class="real-time-badge">REAL-TIME</span></h2>
+            <div id="users-container">
+                <div class="no-data">No users online</div>
+            </div>
+            <div class="last-updated">
+                Last updated: <span id="last-updated">Just now</span>
+            </div>
+        </div>
+
+        <!-- Active Rooms -->
+        <div class="section">
+            <h2>💬 Active Rooms <span class="real-time-badge">REAL-TIME</span></h2>
+            <div id="rooms-container">
+                <div class="no-data">No active rooms</div>
+            </div>
+            <div class="last-updated">
+                Last updated: <span id="last-updated-rooms">Just now</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let messageCount = 0;
+        let isAuthenticated = false;
+
+        // Authenticate with admin
+        socket.emit('adminAuth', 'admin123');
+
+        // Socket event handlers
+        socket.on('adminAuthSuccess', () => {
+            isAuthenticated = true;
+            console.log('Admin authentication successful');
+        });
+
+        socket.on('adminData', (data) => {
+            updateStats(data.stats);
+            updateOnlineUsers(data.onlineUsers);
+            updateActiveRooms(data.activeRooms);
+            updateLastUpdated();
+        });
+
+        // Update functions
+        function updateStats(stats) {
+            document.getElementById('stat-online').textContent = stats.totalOnline;
+            document.getElementById('stat-rooms').textContent = stats.totalRooms;
+            document.getElementById('stat-waiting').textContent = stats.waitingUsers;
+            document.getElementById('stat-messages').textContent = stats.totalMessages;
+        }
+
+        function updateOnlineUsers(users) {
+            const container = document.getElementById('users-container');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="no-data">No users online</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Socket ID</th>
+                            <th>IP Address</th>
+                            <th>Connected At</th>
+                            <th>Status</th>
+                            <th>Room</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td><code>${user.id}</code></td>
+                                <td><span class="ip-address">${user.ip}</span></td>
+                                <td>${formatDateTime(user.connectedAt)}</td>
+                                <td>
+                                    <span class="status-${user.status}">
+                                        ${getStatusIcon(user.status)} ${user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                                    </span>
+                                </td>
+                                <td>${user.room ? `<code>${user.room}</code>` : '—'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function updateActiveRooms(rooms) {
+            const container = document.getElementById('rooms-container');
+            
+            if (rooms.length === 0) {
+                container.innerHTML = '<div class="no-data">No active rooms</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Room ID</th>
+                            <th>Users</th>
+                            <th>Created At</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rooms.map(room => `
+                            <tr>
+                                <td><code>${room.id}</code></td>
+                                <td>${room.users.map(userId => `<code>${userId}</code>`).join(', ')}</td>
+                                <td>${formatDateTime(room.createdAt)}</td>
+                                <td>${getDuration(room.createdAt)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            updateRoomsLastUpdated();
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'waiting': '⏳',
+                'chatting': '💬',
+                'connected': '🔌'
+            };
+            return icons[status] || '❓';
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        function getDuration(createdAt) {
+            const now = new Date();
+            const created = new Date(createdAt);
+            const diff = Math.floor((now - created) / 1000);
+            
+            if (diff < 60) return `${diff}s`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s`;
+            return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+        }
+
+        function updateLastUpdated() {
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+        }
+
+        function updateRoomsLastUpdated() {
+            document.getElementById('last-updated-rooms').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Auto-refresh data every 3 seconds
+        setInterval(() => {
+            if (isAuthenticated) {
+                socket.emit('adminAuth', 'admin123');
+            }
+        }, 3000);
+
+        // Initial display
+        updateLastUpdated();
+        updateRoomsLastUpdated();
+    </script>
+</body>
+</html>
