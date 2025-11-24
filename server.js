@@ -10,7 +10,7 @@ const io = new Server(server);
 
 // Session configuration
 app.use(session({
-  secret: 'your-secret-key-change-this-in-production',
+  secret: 'dont-messwith-mychatapp-gotitdump-ass',
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Admin credentials
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = 'ghost@5555';
 
 // Data storage
 let waitingUser = null;
