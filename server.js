@@ -8,12 +8,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Session configuration
+// Session configuration - FIXED for production
 app.use(session({
-  secret: 'dont-messwith-mychatapp-gotitdump-ass',
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  cookie: { 
+    secure: false, // Set to true if using HTTPS
+    maxAge: 24 * 60 * 60 * 1000 
+  }
 }));
 
 // Middleware
@@ -129,11 +132,14 @@ app.get('/admin-login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
 
-// Admin routes
+// Admin routes - FIXED session handling
 app.get('/admin', (req, res) => {
+  console.log('Admin access check - Session:', req.session);
   if (!req.session.isAdmin) {
+    console.log('Redirecting to login - not admin');
     return res.redirect('/admin-login.html');
   }
+  console.log('Admin access granted');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
@@ -144,7 +150,7 @@ app.post('/admin/login', (req, res) => {
   
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     req.session.isAdmin = true;
-    console.log('Admin login successful');
+    console.log('Admin login successful - Session set');
     return res.redirect('/admin');
   } else {
     console.log('Admin login failed');
@@ -154,18 +160,45 @@ app.post('/admin/login', (req, res) => {
 
 app.get('/admin/logout', (req, res) => {
   req.session.destroy((err) => {
+    console.log('Admin logged out');
     res.redirect('/admin-login.html');
   });
 });
 
-// Socket.io connection handling
+// Debug endpoint to check sessions
+app.get('/debug-session', (req, res) => {
+  res.json({
+    session: req.session,
+    sessionID: req.sessionID,
+    onlineUsers: onlineUsers.size,
+    adminConnections: adminConnections.size
+  });
+});
+
+// Socket.io connection handling - FIXED IP detection for Render
 io.on('connection', (socket) => {
-  const userIP = socket.handshake.headers['x-forwarded-for'] || 
-                 socket.handshake.address || 
-                 'Unknown IP';
+  // FIXED: Better IP detection for cloud platforms
+  const forwardedFor = socket.handshake.headers['x-forwarded-for'];
+  const realIP = socket.handshake.headers['x-real-ip'];
+  const socketIP = socket.handshake.address;
+  
+  let userIP;
+  if (forwardedFor) {
+    userIP = forwardedFor.split(',')[0].trim();
+  } else if (realIP) {
+    userIP = realIP;
+  } else {
+    userIP = socketIP;
+  }
+  
+  // Handle IPv6 format
+  if (userIP && userIP.includes('::ffff:')) {
+    userIP = userIP.replace('::ffff:', '');
+  }
+  
   const userInfo = {
     id: socket.id,
-    ip: userIP,
+    ip: userIP || 'Unknown IP',
     connectedAt: new Date(),
     room: null,
     status: 'waiting'
@@ -173,6 +206,7 @@ io.on('connection', (socket) => {
   
   onlineUsers.set(socket.id, userInfo);
   console.log(`User connected: ${socket.id} from IP: ${userIP}`);
+  console.log(`Total online users: ${onlineUsers.size}`);
   
   updateOnlineCount();
   sendAdminUpdate();
@@ -338,10 +372,14 @@ io.on('connection', (socket) => {
 
   // Admin authentication via socket
   socket.on('adminAuth', (password) => {
+    console.log('Admin auth attempt via socket');
     if (password === ADMIN_PASSWORD) {
       adminConnections.add(socket.id);
       socket.emit('adminAuthSuccess');
+      console.log('Admin socket authentication successful');
       sendAdminUpdate();
+    } else {
+      console.log('Admin socket authentication failed');
     }
   });
 
@@ -402,7 +440,8 @@ const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Admin panel: http://localhost:${PORT}/admin`);
-  console.log(`🔑 Admin credentials: username: 'admin', password: 'admin123'`);
+  console.log(`🔑 Admin credentials: username: 'admin', password: 'ghost@5555'`);
   console.log(`💬 Chat: http://localhost:${PORT}/chat`);
   console.log(`🔐 Admin login: http://localhost:${PORT}/admin-login.html`);
+  console.log(`🐛 Debug: http://localhost:${PORT}/debug-session`);
 });
