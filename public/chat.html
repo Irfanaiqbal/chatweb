@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room — ChatApp</title>
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0d0d17;
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 30px;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            min-height: 70px;
+            flex-shrink: 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-button {
+            background: rgba(138, 112, 255, 0.12);
+            color: #a992ff;
+            border: 2px solid rgba(138, 112, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .back-button:hover {
+            background: rgba(138, 112, 255, 0.2);
+            border-color: rgba(138, 112, 255, 0.5);
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+            flex-grow: 1;
+            margin: 0 20px;
+            background: linear-gradient(90deg, #ffffff, #b3b3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #online-count {
+            background: rgba(138, 112, 255, 0.15);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(138, 112, 255, 0.2);
+            white-space: nowrap;
+            color: #a992ff;
+        }
+
+        /* ===== MAIN CHAT CONTAINER ===== */
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0d0d17;
+            margin: 0;
+            height: calc(100vh - 140px);
+            margin-top: 70px;
+        }
+
+        /* ===== CHAT BOX ===== */
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px 30px;
+            background: #0d0d17;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        /* Custom scrollbar */
+        #chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-box::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 3px;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb {
+            background: #6a5af9;
+            border-radius: 3px;
+        }
+
+        /* ===== MESSAGES ===== */
+        .message {
+            max-width: 85%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.4;
+            position: relative;
+            animation: messageAppear 0.3s ease-out;
+            font-size: 16px;
+            word-break: break-word;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.you {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #6a5af9, #8a70ff);
+            color: #ffffff;
+            border-top-right-radius: 5px;
+            margin-left: auto;
+            box-shadow: 0 4px 20px rgba(110, 90, 255, 0.3);
+        }
+
+        .message.stranger {
+            align-self: flex-start;
+            background: #161623;
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-top-left-radius: 5px;
+            margin-right: auto;
+        }
+
+        .message.status {
+            align-self: center;
+            background: rgba(138, 112, 255, 0.1);
+            color: #a992ff;
+            text-align: center;
+            font-style: italic;
+            max-width: 90%;
+            border-radius: 20px;
+            font-size: 14px;
+            padding: 12px 20px;
+            border: 1px solid rgba(138, 112, 255, 0.2);
+        }
+
+        /* ===== TYPING INDICATOR ===== */
+        #typing-indicator {
+            padding: 12px 20px;
+            color: #a992ff;
+            font-style: italic;
+            text-align: left;
+            display: none;
+            font-size: 14px;
+        }
+
+        .typing-dots {
+            display: inline-block;
+        }
+
+        .typing-dots span {
+            animation: typing 1.4s infinite;
+            display: inline-block;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+
+        /* ===== MESSAGE INPUT AREA ===== */
+        #message-input {
+            display: flex;
+            background: #0f0f1b;
+            padding: 20px 30px;
+            gap: 15px;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
+            min-height: 90px;
+        }
+
+        #message-input input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 25px;
+            background: #161623;
+            color: #e2e8f0;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-height: 55px;
+            -webkit-appearance: none;
+        }
+
+        #message-input input:focus {
+            outline: none;
+            border-color: #6a5af9;
+            box-shadow: 0 0 0 3px rgba(106, 90, 249, 0.2);
+        }
+
+        #message-input input::placeholder {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        #message-input input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #message-input button {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            min-height: 55px;
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        #skip {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        #skip:active, #skip:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        #send {
+            background: linear-gradient(135deg, #6a5af9, #8a70ff);
+            color: white;
+            box-shadow: 0 4px 20px rgba(110, 90, 255, 0.3);
+        }
+
+        #send:active, #send:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(110, 90, 255, 0.4);
+        }
+
+        #message-input button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 20px;
+                min-height: 60px;
+            }
+
+            .back-button {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+
+            .title {
+                font-size: 1.3rem;
+                margin: 0 15px;
+            }
+
+            #online-count {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+            }
+
+            #chat-container {
+                height: calc(100vh - 120px);
+                margin-top: 60px;
+            }
+
+            #chat-box {
+                padding: 20px;
+                gap: 12px;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 12px 18px;
+                font-size: 15px;
+            }
+
+            .message.status {
+                font-size: 13px;
+                padding: 10px 16px;
+            }
+
+            #message-input {
+                padding: 15px 20px;
+                gap: 12px;
+                min-height: 80px;
+            }
+
+            #message-input input {
+                padding: 14px 18px;
+                font-size: 16px;
+                min-height: 50px;
+            }
+
+            #message-input button {
+                padding: 14px 20px;
+                font-size: 13px;
+                min-height: 50px;
+                min-width: 70px;
+            }
+
+            /* Hide send button on mobile */
+            #send {
+                display: none !important;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px 15px;
+            }
+
+            .back-button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .title {
+                font-size: 1.1rem;
+            }
+
+            #online-count {
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+
+            #chat-box {
+                padding: 15px;
+            }
+
+            .message {
+                max-width: 95%;
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+
+            .message.status {
+                font-size: 12px;
+                padding: 8px 14px;
+            }
+
+            #message-input {
+                padding: 12px 15px;
+                gap: 10px;
+            }
+
+            #message-input input {
+                padding: 12px 16px;
+                font-size: 16px;
+                min-height: 48px;
+            }
+
+            #message-input button {
+                padding: 12px 16px;
+                font-size: 12px;
+                min-height: 48px;
+                min-width: 65px;
+            }
+
+            #skip {
+                min-width: 60px;
+            }
+        }
+
+        /* Very small devices (iPhone SE, etc) */
+        @media (max-width: 320px) {
+            .header {
+                padding: 8px 12px;
+            }
+
+            .back-button {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            .title {
+                font-size: 1rem;
+            }
+
+            #online-count {
+                padding: 5px 10px;
+                font-size: 0.7rem;
+            }
+
+            .message {
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+
+            #message-input input {
+                padding: 10px 14px;
+            }
+
+            #message-input button {
+                padding: 10px 14px;
+                min-width: 60px;
+            }
+        }
+
+        /* Landscape mode optimizations */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header {
+                padding: 8px 20px;
+                min-height: 50px;
+            }
+
+            #chat-container {
+                height: calc(100vh - 100px);
+                margin-top: 50px;
+            }
+
+            #message-input {
+                padding: 12px 20px;
+                min-height: 70px;
+            }
+
+            #message-input input,
+            #message-input button {
+                min-height: 45px;
+            }
+        }
+
+        /* Prevent zoom on input focus for iOS */
+        @media (max-width: 768px) {
+            #message-input input {
+                font-size: 16px;
+                transform: translateZ(0);
+            }
+        }
+
+        /* Touch-friendly improvements */
+        .back-button {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* Smooth transitions for mobile */
+        * {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #chat-box {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Skip button active state for mobile */
+        #skip:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-button">← Home</a>
+        <h1 class="title">Chat Room</h1>
+        <div id="online-count">Online: 0</div>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-box">
+            <div class="message status">
+                🔍 Searching for a stranger to connect with...
+            </div>
+        </div>
+        
+        <div id="typing-indicator">
+            <span>Stranger is typing</span>
+            <div class="typing-dots">
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+            </div>
+        </div>
+
+        <div id="message-input">
+            <button id="skip" title="Skip current chat">Skip</button>
+            <input 
+                id="message" 
+                type="text" 
+                placeholder="Type your message..." 
+                disabled
+                autocapitalize="sentences"
+                autocomplete="off"
+                autocorrect="on"
+                spellcheck="true"
+            >
+            <button id="send" disabled>Send</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const onlineCount = document.getElementById('online-count');
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message');
+        const sendButton = document.getElementById('send');
+        const skipButton = document.getElementById('skip');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        let typingTimer;
+        let skipCooldown = false;
+
+        // Clear chat and show initial message
+        function clearChat() {
+            chatBox.innerHTML = '';
+            appendMessage('🔍 Searching for a stranger to connect with...', 'status');
+        }
+
+        function appendMessage(message, className) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            messageElement.classList.add('message', className);
+            chatBox.appendChild(messageElement);
+            
+            // Smooth scroll to bottom
+            setTimeout(() => {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 50);
+        }
+
+        function toggleInputState(enabled) {
+            messageInput.disabled = !enabled;
+            sendButton.disabled = !enabled;
+            if (enabled) {
+                setTimeout(() => {
+                    messageInput.focus();
+                }, 100);
+            }
+        }
+
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+            setTimeout(() => {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 50);
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+
+        // Socket event handlers
+        socket.on('status', (data) => {
+            if (data.clear) {
+                clearChat();
+            }
+            appendMessage(data.message, 'status');
+            toggleInputState(data.connected);
+            
+            // Reset skip cooldown when status changes
+            skipCooldown = false;
+            skipButton.disabled = false;
+            skipButton.style.opacity = '1';
+        });
+
+        socket.on('receiveMessage', (message) => {
+            appendMessage(`Stranger: ${message}`, 'stranger');
+        });
+
+        socket.on('updateOnlineCount', (count) => {
+            onlineCount.textContent = `Online: ${count}`;
+        });
+
+        socket.on('typing', (isTyping) => {
+            if (isTyping) {
+                showTypingIndicator();
+            } else {
+                hideTypingIndicator();
+            }
+        });
+
+        // Skip button functionality with cooldown
+        function handleSkip() {
+            if (skipCooldown) return;
+            
+            skipCooldown = true;
+            skipButton.disabled = true;
+            skipButton.style.opacity = '0.6';
+            
+            console.log('Skip button clicked');
+            socket.emit('skipChat');
+            
+            // Re-enable after 2 seconds
+            setTimeout(() => {
+                skipCooldown = false;
+                skipButton.disabled = false;
+                skipButton.style.opacity = '1';
+            }, 2000);
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Enhanced Enter key detection for mobile (when send button is hidden)
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+                e.preventDefault();
+            }
+        });
+
+        // Also handle the 'done' button on mobile keyboards
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            socket.emit('typing', true);
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                socket.emit('typing', false);
+            }, 1000);
+        });
+
+        // Mobile-friendly skip button events
+        skipButton.addEventListener('click', handleSkip);
+        skipButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleSkip();
+        }, { passive: false });
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                appendMessage(`You: ${message}`, 'you');
+                socket.emit('sendMessage', message);
+                messageInput.value = '';
+                
+                // Stop typing indicator
+                socket.emit('typing', false);
+                clearTimeout(typingTimer);
+                hideTypingIndicator();
+            }
+        }
+
+        // Mobile viewport height fix
+        function setViewportHeight() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+
+        setViewportHeight();
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', setViewportHeight);
+
+        // Prevent double-tap zoom on buttons
+        document.addEventListener('touchstart', function() {}, { passive: true });
+
+        // Initialize
+        clearChat();
+        
+        // Focus management for mobile
+        messageInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
+        });
+    </script>
+</body>
+</html>
