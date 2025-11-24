@@ -3,16 +3,20 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const session = require('express-session');
+const MemoryStore = require('memorystore')(session); // Fixed session store
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Session configuration - FIXED for production
+// Session configuration - FIXED for production with proper store
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
   resave: false,
   saveUninitialized: false,
+  store: new MemoryStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
   cookie: { 
     secure: false, // Set to true if using HTTPS
     maxAge: 24 * 60 * 60 * 1000 
@@ -38,6 +42,8 @@ let messageCount = 0;
 // Utility functions
 function updateOnlineCount() {
   io.emit('updateOnlineCount', onlineUsers.size);
+  // Also send to admin panel specifically
+  notifyAdmins('onlineCountUpdate', onlineUsers.size);
 }
 
 function notifyAdmins(event, data) {
@@ -113,10 +119,24 @@ function sendAdminUpdate() {
     }
   };
   
+  console.log('Sending admin update:', {
+    onlineUsers: adminData.onlineUsers.length,
+    activeRooms: adminData.activeRooms.length,
+    stats: adminData.stats
+  });
+  
   adminConnections.forEach(adminId => {
     io.to(adminId).emit('adminData', adminData);
   });
 }
+
+// Force send admin update every 5 seconds for testing
+setInterval(() => {
+  if (adminConnections.size > 0) {
+    console.log('Auto-sending admin update to', adminConnections.size, 'admins');
+    sendAdminUpdate();
+  }
+}, 5000);
 
 // Routes
 app.get('/', (req, res) => {
@@ -134,12 +154,12 @@ app.get('/admin-login.html', (req, res) => {
 
 // Admin routes - FIXED session handling
 app.get('/admin', (req, res) => {
-  console.log('Admin access check - Session:', req.session);
+  console.log('Admin access check - Session:', req.sessionID);
   if (!req.session.isAdmin) {
     console.log('Redirecting to login - not admin');
     return res.redirect('/admin-login.html');
   }
-  console.log('Admin access granted');
+  console.log('Admin access granted for session:', req.sessionID);
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
@@ -150,7 +170,7 @@ app.post('/admin/login', (req, res) => {
   
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     req.session.isAdmin = true;
-    console.log('Admin login successful - Session set');
+    console.log('Admin login successful - Session:', req.sessionID);
     return res.redirect('/admin');
   } else {
     console.log('Admin login failed');
@@ -171,7 +191,9 @@ app.get('/debug-session', (req, res) => {
     session: req.session,
     sessionID: req.sessionID,
     onlineUsers: onlineUsers.size,
-    adminConnections: adminConnections.size
+    adminConnections: adminConnections.size,
+    waitingUser: waitingUser,
+    activeRooms: activeRooms.size
   });
 });
 
@@ -267,6 +289,7 @@ io.on('connection', (socket) => {
       const room = activeRooms.get(userInfo.room);
       if (room) {
         socket.to(userInfo.room).emit('receiveMessage', message);
+        sendAdminUpdate(); // Update admin when message is sent
       }
     }
   });
@@ -376,10 +399,30 @@ io.on('connection', (socket) => {
     if (password === ADMIN_PASSWORD) {
       adminConnections.add(socket.id);
       socket.emit('adminAuthSuccess');
-      console.log('Admin socket authentication successful');
-      sendAdminUpdate();
+      console.log('Admin socket authentication successful. Total admin connections:', adminConnections.size);
+      
+      // Send immediate update to this admin
+      socket.emit('adminData', {
+        onlineUsers: Array.from(onlineUsers.values()),
+        waitingUser: waitingUser,
+        activeRooms: getActiveRoomsData(),
+        stats: {
+          totalOnline: onlineUsers.size,
+          totalRooms: activeRooms.size,
+          waitingUsers: waitingUser ? 1 : 0,
+          totalMessages: messageCount
+        }
+      });
     } else {
       console.log('Admin socket authentication failed');
+    }
+  });
+
+  // Admin requesting manual refresh
+  socket.on('adminRefresh', () => {
+    if (adminConnections.has(socket.id)) {
+      console.log('Manual admin refresh requested');
+      sendAdminUpdate();
     }
   });
 
