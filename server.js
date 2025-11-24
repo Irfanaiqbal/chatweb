@@ -8,10 +8,10 @@ const MemoryStore = require('memorystore')(session);
 const app = express();
 const server = http.createServer(app);
 
-// IMPORTANT: Configure CORS for Socket.io
+// Configure Socket.io
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins in production
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
@@ -35,9 +35,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Admin credentials
+// Admin credentials - UPDATED PASSWORD
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'ghost@5555';
+const ADMIN_PASSWORD = 'ghost@5555'; // Your actual password
 
 // Data storage
 let waitingUser = null;
@@ -49,7 +49,6 @@ let messageCount = 0;
 // Utility functions
 function updateOnlineCount() {
   const count = onlineUsers.size;
-  console.log(`📊 Emitting online count: ${count}`);
   io.emit('updateOnlineCount', count);
 }
 
@@ -67,17 +66,19 @@ function sendAdminUpdate() {
     timestamp: new Date().toISOString()
   };
   
-  console.log('🔄 Sending admin update:', {
-    onlineUsers: adminData.onlineUsers.length,
-    activeRooms: adminData.activeRooms.length,
-    adminConnections: adminConnections.size
-  });
+  console.log('🔄 Sending admin update to', adminConnections.size, 'admins');
   
   adminConnections.forEach(adminId => {
-    console.log(`📨 Sending to admin: ${adminId}`);
     io.to(adminId).emit('adminData', adminData);
   });
 }
+
+// Auto-send admin updates every 3 seconds
+setInterval(() => {
+  if (adminConnections.size > 0) {
+    sendAdminUpdate();
+  }
+}, 3000);
 
 // Debug endpoint to see all current data
 app.get('/debug-data', (req, res) => {
@@ -119,10 +120,14 @@ app.get('/admin', (req, res) => {
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   
+  console.log('Login attempt for user:', username);
+  
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     req.session.isAdmin = true;
+    console.log('Admin login successful');
     return res.redirect('/admin');
   } else {
+    console.log('Admin login failed');
     return res.redirect('/admin-login.html?error=1');
   }
 });
@@ -137,25 +142,44 @@ app.get('/admin/logout', (req, res) => {
 io.on('connection', (socket) => {
   console.log('🔌 New connection:', socket.id);
   
+  // Get user IP
+  const forwardedFor = socket.handshake.headers['x-forwarded-for'];
+  const realIP = socket.handshake.headers['x-real-ip'];
+  const socketIP = socket.handshake.address;
+  
+  let userIP;
+  if (forwardedFor) {
+    userIP = forwardedFor.split(',')[0].trim();
+  } else if (realIP) {
+    userIP = realIP;
+  } else {
+    userIP = socketIP;
+  }
+  
+  // Handle IPv6 format
+  if (userIP && userIP.includes('::ffff:')) {
+    userIP = userIP.replace('::ffff:', '');
+  }
+
   const userInfo = {
     id: socket.id,
-    ip: socket.handshake.address,
+    ip: userIP || 'Unknown IP',
     connectedAt: new Date(),
     room: null,
     status: 'waiting'
   };
   
   onlineUsers.set(socket.id, userInfo);
-  console.log(`👤 User ${socket.id} connected. Total: ${onlineUsers.size}`);
+  console.log(`👤 User ${socket.id} connected from IP: ${userIP}`);
   
-  // Send immediate update to all admins
+  // Send immediate update
   updateOnlineCount();
   sendAdminUpdate();
 
   // Handle user matching
   if (waitingUser && waitingUser !== socket.id) {
     const partnerSocket = io.sockets.sockets.get(waitingUser);
-    if (partnerSocket) {
+    if (partnerSocket && onlineUsers.has(waitingUser)) {
       // Create room
       const roomId = `room-${socket.id}-${waitingUser}`;
       socket.join(roomId);
@@ -208,6 +232,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle typing indicators
+  socket.on('typing', (isTyping) => {
+    if (userInfo.room) {
+      socket.to(userInfo.room).emit('typing', isTyping);
+    }
+  });
+
   // Handle skip chat
   socket.on('skipChat', () => {
     console.log(`⏭️ Skip requested by: ${socket.id}`);
@@ -243,37 +274,21 @@ io.on('connection', (socket) => {
     sendAdminUpdate();
   });
 
-// Admin authentication
-socket.on('adminAuth', (password) => {
+  // Admin authentication - FIXED PASSWORD
+  socket.on('adminAuth', (password) => {
     console.log(`🔐 Admin auth attempt from: ${socket.id}`);
-    console.log(`🔐 Password received: ${password}`);
-    console.log(`🔐 Expected password: ${ADMIN_PASSWORD}`);
     
     if (password === ADMIN_PASSWORD) {
-        adminConnections.add(socket.id);
-        socket.emit('adminAuthSuccess');
-        console.log(`✅ Admin authenticated: ${socket.id}. Total admins: ${adminConnections.size}`);
-        
-        // Send immediate data to this admin
-        const adminData = {
-            onlineUsers: Array.from(onlineUsers.values()),
-            waitingUser: waitingUser,
-            activeRooms: Array.from(activeRooms.values()),
-            stats: {
-                totalOnline: onlineUsers.size,
-                totalRooms: activeRooms.size,
-                waitingUsers: waitingUser ? 1 : 0,
-                totalMessages: messageCount
-            }
-        };
-        
-        socket.emit('adminData', adminData);
-        console.log(`📨 Sent initial data to admin ${socket.id}`);
+      adminConnections.add(socket.id);
+      socket.emit('adminAuthSuccess');
+      console.log(`✅ Admin authenticated: ${socket.id}. Total admins: ${adminConnections.size}`);
+      
+      // Send immediate data to this admin
+      sendAdminUpdate();
     } else {
-        console.log(`❌ Admin authentication FAILED for: ${socket.id}`);
-        console.log(`❌ Received: ${password}, Expected: ${ADMIN_PASSWORD}`);
+      console.log(`❌ Admin authentication FAILED: Wrong password`);
     }
-});
+  });
 
   // Handle manual refresh request
   socket.on('adminRefresh', () => {
@@ -311,6 +326,6 @@ const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Admin panel: http://localhost:${PORT}/admin`);
+  console.log(`🔑 Admin credentials: admin / ghost@5555`);
   console.log(`🐛 Debug data: http://localhost:${PORT}/debug-data`);
-  console.log(`🔑 Admin credentials: admin / admin123`);
 });
